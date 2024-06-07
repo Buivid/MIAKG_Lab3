@@ -1,9 +1,6 @@
 #include "draw.h"
 
-#include <SDL.h>
-#include <stdio.h>
-#include <string>
-#include <cassert>
+
 
 bool init();
 void close();
@@ -60,12 +57,17 @@ int main(int argc, char *argv[])
       0x00000000);// alpha
 
     gTexture = SDL_CreateTextureFromSurface(gRenderer, loadedSurface);
-
+    SDL_FillRect(loadedSurface, NULL, RGB32(0, 0, 0));
     if (NULL == gTexture) {
       printf("Failed to load media!\n");
     } else {
       bool quit = false;
       SDL_Event e;
+      MODE mode = Inside;
+      Circle circle;
+      circle.set_points();
+      Rectangle window;
+      window.set_points();
 
       while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
@@ -74,11 +76,65 @@ int main(int argc, char *argv[])
           }
           if (SDL_KEYDOWN == e.type) {
             switch (e.key.keysym.scancode) {
+            case SDL_SCANCODE_RIGHT:
+              printf("SDL_SCANCODE_RIGHT have been presssed\n");
+              circle.get_affine_koef(1, -10);
+              break;
+            case SDL_SCANCODE_LEFT:
+              printf("SDL_SCANCODE_LEFT have been presssed\n");
+              circle.get_affine_koef(1, 10);
+              break;
+            case SDL_SCANCODE_UP:
+              printf("SDL_SCANCODE_UP have been presssed\n");
+              circle.get_affine_koef(2, -10);
+              break;
+            case SDL_SCANCODE_DOWN:
+              printf("SDL_SCANCODE_DOWN have been presssed\n");
+              circle.get_affine_koef(2, 10);
+              break;
+            case SDL_SCANCODE_Q:
+              printf("SDL_SCANCODE_KP_PLUS have been presssed\n");
+              circle.get_affine_koef(3, 5);
+              break;
+            case SDL_SCANCODE_E:
+              printf("SDL_SCANCODE_KP_MINUS have been presssed\n");
+              circle.get_affine_koef(3, -5);
+              break;
             case SDL_SCANCODE_KP_PLUS:
               printf("SDL_SCANCODE_KP_PLUS have been presssed\n");
+              circle.get_affine_koef(4, 0.01);
               break;
             case SDL_SCANCODE_KP_MINUS:
               printf("SDL_SCANCODE_KP_MINUS have been presssed\n");
+              circle.get_affine_koef(4, -0.01);
+              break;
+            case SDL_SCANCODE_1:
+              printf("SDL_SCANCODE_1 have been presssed\n");
+              mode = Inside;
+              break;
+            case SDL_SCANCODE_2:
+              printf("SDL_SCANCODE_2 have been presssed\n");
+              mode = Outside;
+              break;
+            case SDL_SCANCODE_3:
+              printf("SDL_SCANCODE_3 have been presssed\n");
+              mode = Visible;
+              break;
+            case SDL_SCANCODE_EQUALS:
+              printf("SDL_SCANCODE_+ have been presssed\n");
+              window.get_affine_koef(4, 0.01);
+              break;
+            case SDL_SCANCODE_MINUS:
+              printf("SDL_SCANCODE_- have been pressed\n");
+              window.get_affine_koef(4, -0.01);
+              break;
+            case SDL_SCANCODE_KP_8:
+              printf("SDL_SCANCODE_KP_8 have been presssed\n");
+              window.get_affine_koef(2, -10);
+              break;
+            case SDL_SCANCODE_KP_2:
+              printf("SDL_SCANCODE_KP_2 have been presssed\n");
+              window.get_affine_koef(2, 10);
               break;
             case SDL_SCANCODE_ESCAPE:
               quit = true;
@@ -90,7 +146,9 @@ int main(int argc, char *argv[])
         }
         SDL_RenderClear(gRenderer);
 
-        draw(loadedSurface);
+        SDL_FillRect(loadedSurface, NULL, RGB32(0, 0, 0));
+
+        draw(loadedSurface, circle, window, mode);
 
         SDL_UpdateTexture(gTexture, NULL, loadedSurface->pixels, loadedSurface->pitch);
         SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
@@ -101,3 +159,5 @@ int main(int argc, char *argv[])
   close();
   return 0;
 }
+
+
