@@ -66,8 +66,14 @@ int main(int argc, char *argv[])
       MODE mode = Inside;
       Circle circle;
       circle.set_points();
-      Rectangle window;
+      Boo::Rectangle window;
       window.set_points();
+      float keyup = 0, dy = 0, dx = 0;
+      bool isDragging = false;
+
+      int flag = 0, isdragging=0;
+      bool fill = false;
+      int mouseX, mouseY;
 
       while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
@@ -136,6 +142,11 @@ int main(int argc, char *argv[])
               printf("SDL_SCANCODE_KP_2 have been presssed\n");
               window.get_affine_koef(2, 10);
               break;
+            case SDL_SCANCODE_F:
+              printf("SDL_SCANCODE_F have been presssed\n");
+              if(fill == false) fill = true;
+              else fill = false;
+              break;
             case SDL_SCANCODE_ESCAPE:
               quit = true;
               break;
@@ -143,12 +154,45 @@ int main(int argc, char *argv[])
               break;
             }
           }
+          else if (SDL_MOUSEBUTTONDOWN == e.type) {// Обработка нажатия левой кнопки мыши
+            printf("SDL_SCANCODE_mouse have been presssed\n");
+            if (e.button.button == SDL_BUTTON_LEFT) {
+              if (!isDragging) {
+                mouseX, mouseY;
+                SDL_GetMouseState(&mouseX, &mouseY);
+              }
+
+              if (circle.isPointInCircle(mouseX, mouseY))
+                isDragging = true;
+            }
+          } else if (e.type == SDL_MOUSEBUTTONUP) {
+            if (e.button.button == SDL_BUTTON_LEFT) {
+              keyup = 1;
+              isDragging = false;
+            }
+          } else if (e.type == SDL_MOUSEMOTION) {
+            if (isDragging) {
+              keyup = 0;
+              int mouseX1, mouseY1;
+              int tmpdx = dx, tmpdy = dy;
+              SDL_GetMouseState(&mouseX1, &mouseY1);
+              dx = mouseX1 - mouseX;
+              dy = mouseY1 - mouseY;
+              circle.get_affine_koef(1, -(dx  - tmpdx));
+              circle.get_affine_koef(2, dy - tmpdy);
+
+            }
+          }
+          if (keyup == 1){
+            dx = 0;
+            dy = 0;
+        }
         }
         SDL_RenderClear(gRenderer);
 
         SDL_FillRect(loadedSurface, NULL, RGB32(0, 0, 0));
 
-        draw(loadedSurface, circle, window, mode);
+        draw(loadedSurface, circle, window, mode, fill);
 
         SDL_UpdateTexture(gTexture, NULL, loadedSurface->pixels, loadedSurface->pitch);
         SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);

@@ -38,7 +38,16 @@ void CirclePoints (SDL_Surface *s, int x, int y, int color)
  put_pixel32( s, xCenter - x, yCenter + y, color);
 }
 
-
+bool findInStack(std::stack<Point> stack, Point value) {
+    while (!stack.empty()) {
+        Point temp = stack.top();
+        if (temp.x == value.x && temp.y == value.y) {
+            return true;
+        }
+        stack.pop();
+    }
+    return false;
+}
 
 
 int computeCode(int x, int y) {
@@ -54,22 +63,17 @@ void cohenSutherland(float *xstart, float *ystart, float *xend, float *yend, int
 {
   int codeStart = computeCode(*xstart, *ystart);
   int codeEnd = computeCode(*xend, *yend);
-  int has_hanged = 0;
-
-  bool accept = false;
-
+  int has_сhanged = 0;
   while (true) {
     if (codeStart == 0 && codeEnd == 0) {
-      if (has_hanged==0)
+      if (has_сhanged ==0)
         *flag = 1;
       else
         *flag = 3;
-      accept = true;
       break;
     }
     else if (codeStart & codeEnd) {
-
-      if (has_hanged == 0)
+      if (has_сhanged == 0)
         *flag = 0;
       else
         *flag = 4;
@@ -100,7 +104,7 @@ void cohenSutherland(float *xstart, float *ystart, float *xend, float *yend, int
           *yend = y;
           codeEnd = computeCode(*xend, *yend);
         }
-        has_hanged = 1;
+        has_сhanged = 1;
     }
 
   }
@@ -145,7 +149,7 @@ void line (SDL_Surface *s, int x1, int y1, int x2, int y2, int color)
 }
 
 
-void draw(SDL_Surface *s, Circle circle, Rectangle window, MODE mode)
+void draw(SDL_Surface *s, Circle circle, Boo::Rectangle window, MODE mode, bool fill)
 {
   // line(s, X_MIN, Y_MIN, X_MAX, Y_MIN, RGB32(10, 150, 200));
   // line(s, X_MAX, Y_MIN, X_MAX, Y_MAX, RGB32(10, 150, 200));
@@ -157,7 +161,8 @@ void draw(SDL_Surface *s, Circle circle, Rectangle window, MODE mode)
 
   circle.transform();
   circle.draw(s, mode);
-  circle.fill(s);
+  if(fill)
+    circle.seedFill(s, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, RGB32(250, 0, 0));
 
 
 

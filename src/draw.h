@@ -7,8 +7,12 @@
 #include <stdio.h>
 #include <string>
 #include <algorithm>
-
+#include <stack>
 #include <vector>
+#include "windows.h"
+#include <thread>
+#include <chrono>
+
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 1920;
@@ -35,13 +39,17 @@ enum MODE {Inside, Outside, Visible};
 int computeCode(int x, int y);
 void line (SDL_Surface *s, int x1, int y1, int x2, int y2, int color);
 void put_pixel32(SDL_Surface *s, int x, int y, Uint32 pixel);
+Uint32 get_pixel32(SDL_Surface *surface, int x, int y);
 void cohenSutherland(float *xstart, float *ystart, float *xend, float *yend, int *flag);
+
 
 struct Point
 {
     int x;
     int y;
 };
+
+bool findInStack(std::stack<Point> stack, Point value);
 
 struct Affine_transform
 {
@@ -118,11 +126,11 @@ class Figure
         {
             if(i == num_vertex-1)
             {
-                line(s, point[i].x, point[i].y, point[1].x, point[1].y, RGB32(10, 150, 200));
+                line(s, point[i].x, point[i].y, point[1].x, point[1].y, RGB32(0, 0, 250));
             }
             else
             {
-                line(s, point[i].x, point[i].y, point[i+1].x, point[i+1].y, RGB32(10, 150, 200));
+                line(s, point[i].x, point[i].y, point[i+1].x, point[i+1].y, RGB32(0, 0, 250));
             }
         }
     }
@@ -213,11 +221,12 @@ class Figure
 class Circle: public Figure{
     float radius;
     public:
+
     Circle()
     {
         Point p = {0,0};
         point.push_back(p);
-        radius = 255;
+        radius = 30;
         num_vertex = 1;
     }
 
@@ -244,40 +253,86 @@ class Circle: public Figure{
         }
     }
 
-    void fill(SDL_Surface* s)
+    void seedFill(SDL_Surface* s, int startX, int startY, Uint32 newColor) {
+
+    // Проверка начальной точки
+    if (get_pixel32(s, startX, startY) == newColor) return;
+
+    // Стек для хранения точек, которые нужно обработать
+    std::stack<Point> pixels;
+    pixels.push(point[0]);
+
+    while (!pixels.empty()) {
+
+        Point p = pixels.top();
+        pixels.pop();
+        if(get_pixel32(s, p.x, p.y) == newColor) continue;
+        int x = p.x;
+        int y = p.y;
+        Point p2 = {x, y-1};
+        if(get_pixel32(s, x, y-1) == get_pixel32(s, x, y)) //&& findInStack(pixels, p2)==false
+        {
+            pixels.push(p2);
+        }
+        p2={x+1, y};
+        if(get_pixel32(s, x+1, y) == get_pixel32(s, x, y) ) //&& findInStack(pixels, p2)==false
+        {
+            pixels.push(p2);
+        }
+        p2 = { x, y + 1};
+        if(get_pixel32(s, x, y+1) == get_pixel32(s, x, y) ) //&& findInStack(pixels, p2)==false
+        {
+            pixels.push(p2);
+        }
+        p2 = { x-1, y};
+        if(get_pixel32(s, x-1, y) == get_pixel32(s, x, y) ) //&& findInStack(pixels, p2)==false
+        {
+            pixels.push(p2);
+        }
+        //Sleep(5);
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // задержка 50 мс
+        put_pixel32(s, x, y, newColor);
+        }
+    }
+
+
+    // void fill(SDL_Surface* s, MODE mode)
+    // {
+    //     Point point_ztr=point[0];
+    //     // int ymin = point[1].y, ymax = point[1].y;
+    //     // for (const auto& p : point) {
+    //     //     if (p.y < ymin ) ymin = p.y;
+    //     //     if (p.y > ymax ) ymax = p.y;
+    //     // }
+    //     // for (float y = ymin; y <= ymax; ++y) {
+    //     //     std::vector<float> intersections;
+    //     //     for (int i = 0; i < num_vertex; ++i) {
+    //     //         Point p1 = point[i];
+    //     //         Point p2 = point[(i + 1) % num_vertex];
+    //     //         if (p1.y == p2.y) continue;
+    //     //         if (y >= std::min(p1.y, p2.y) && y < std::max(p1.y, p2.y)) {
+    //     //             float x = p1.x + (float)(y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y);
+    //     //             intersections.push_back((int)x);
+    //     //         }
+    //     //     }
+    //     //     std::sort(intersections.begin(), intersections.end());
+    //     //     float x_start;
+    //     //     int flag;
+    //     //     float x_end;
+    //     //     for (size_t i = 0; i < intersections.size(); i += 2) {
+    //     //         x_start = intersections[i];
+    //     //         x_end = intersections[i+1];
+    //     //         cohenSutherland(&x_start, &y, &x_end, &y, &flag);
+    //     //         if(mode==Inside && (flag==1 || flag == 3)) line(s, x_start, y, x_end, y, RGB32(255, 128, 0));
+    //     //         else if (mode == Outside && (flag == 0 || flag == 4)) line(s, x_start, y, x_end, y, RGB32(255, 128, 0));
+    //     //     }
+    //     // }
+    // }
+
+    bool isPointInCircle(int x, int y)
     {
-
-        if (num_vertex < 3) return;
-
-        // Определение границ многоугольника
-        int ymin = point[1].y, ymax = point[1].y;
-        for (const auto& p : point) {
-            if (p.y < ymin && p.y > Y_MIN) ymin = p.y;
-            if (p.y > ymax && p.y < Y_MAX) ymax = p.y;
-        }
-
-        // Сканирование каждой строки
-        for (int y = ymin; y <= ymax; ++y) {
-            std::vector<int> intersections;
-            for (int i = 1; i < num_vertex; ++i) {
-                Point p1 = point[i];
-                Point p2 = point[(i + 1) % num_vertex];
-                if (p1.y == p2.y) continue; // Горизонтальные рёбра не обрабатываются
-                if (y >= std::min(p1.y, p2.y) && y < std::max(p1.y, p2.y)) {
-                    float x = p1.x + (float)(y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y);
-                    if( x < X_MIN)
-                        x = X_MIN;
-                    else if (x > X_MAX)
-                        x = X_MAX;
-                    intersections.push_back((int)x);
-
-                }
-            }
-            std::sort(intersections.begin(), intersections.end());
-            for (size_t i = 0; i < intersections.size(); i += 2) {
-                line(s, intersections[i], y, intersections[i + 1], y, RGB32(255, 128, 0));
-            }
-        }
+        double distance = std::sqrt(std::pow(x - koefs.Tx, 2) + std::pow(y - koefs.Ty, 2));
+        return distance <= radius;
     }
 
     void draw(SDL_Surface * s, MODE mode)
@@ -349,12 +404,9 @@ class Circle: public Figure{
             }
         }
 
-
-
-
     }
 };
-
+namespace Boo{
 class Rectangle: public Figure{
     public:
 
@@ -367,8 +419,8 @@ class Rectangle: public Figure{
         Y_MAX = point[3].y;
     }
 };
+}
 
-
-void draw(SDL_Surface *s, Circle, Rectangle, MODE);
+void draw(SDL_Surface *s, Circle, Boo::Rectangle, MODE, bool);
 void circle(SDL_Surface * s, int xc, int yc, int r, int color) ;
 
