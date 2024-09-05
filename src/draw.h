@@ -13,7 +13,6 @@
 #include <thread>
 #include <chrono>
 
-
 //Screen dimension constants
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
@@ -253,45 +252,69 @@ class Circle: public Figure{
         }
     }
 
-    void seedFill(SDL_Surface* s, int startX, int startY, Uint32 newColor) {
-
-    // Проверка начальной точки
-    if (get_pixel32(s, startX, startY) == newColor) return;
-
+    void seedFill(SDL_Surface* s, int startX, int startY, Uint32 newColor, SDL_Texture *gTexture, SDL_Renderer *gRenderer, SDL_Surface *loadedSurface, bool fastFill) {
     // Стек для хранения точек, которые нужно обработать
     std::stack<Point> pixels;
     pixels.push(point[0]);
-
+    int curRadius = radius*koefs.scale;
     while (!pixels.empty()) {
-
         Point p = pixels.top();
         pixels.pop();
+
         if(get_pixel32(s, p.x, p.y) == newColor) continue;
         int x = p.x;
         int y = p.y;
+
+        //проверка на расположение относительно окна
+        if(x-curRadius+2 >= X_MAX ||
+           x+curRadius-2 <= X_MIN ||
+           y-curRadius+2 >= Y_MAX ||
+           y+curRadius-2 <= Y_MIN){
+           break;
+        }else{
+            if(x >= X_MAX){
+                x = (x - curRadius + X_MAX) / 2;
+            }
+            if(x <= X_MIN){
+                x = (x + curRadius + X_MIN) / 2;
+            }
+            if(y >= Y_MAX){
+                y = (y - curRadius + Y_MAX) / 2;
+            }
+            if(y <= Y_MIN){
+                y = (y + curRadius + Y_MIN) / 2;
+            }
+        }
+
         Point p2 = {x, y-1};
-        if(get_pixel32(s, x, y-1) == get_pixel32(s, x, y)) //&& findInStack(pixels, p2)==false
+        if(get_pixel32(s, x, y-1) == get_pixel32(s, x, y))
         {
             pixels.push(p2);
         }
         p2={x+1, y};
-        if(get_pixel32(s, x+1, y) == get_pixel32(s, x, y) ) //&& findInStack(pixels, p2)==false
+        if(get_pixel32(s, x+1, y) == get_pixel32(s, x, y) )
         {
             pixels.push(p2);
         }
         p2 = { x, y + 1};
-        if(get_pixel32(s, x, y+1) == get_pixel32(s, x, y) ) //&& findInStack(pixels, p2)==false
+        if(get_pixel32(s, x, y+1) == get_pixel32(s, x, y) )
         {
             pixels.push(p2);
         }
         p2 = { x-1, y};
-        if(get_pixel32(s, x-1, y) == get_pixel32(s, x, y) ) //&& findInStack(pixels, p2)==false
+        if(get_pixel32(s, x-1, y) == get_pixel32(s, x, y) )
         {
             pixels.push(p2);
         }
-        //Sleep(5);
-        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // задержка 50 мс
+        // std::this_thread::sleep_for(std::chrono::milliseconds(50)); // задержка 50 мс
+
         put_pixel32(s, x, y, newColor);
+
+        if(!fastFill){
+            SDL_UpdateTexture(gTexture, NULL, loadedSurface->pixels, loadedSurface->pitch);
+            SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
+            SDL_RenderPresent(gRenderer);
+            }
         }
     }
 
@@ -421,6 +444,6 @@ class Rectangle: public Figure{
 };
 }
 
-void draw(SDL_Surface *s, Circle, Boo::Rectangle, MODE, bool);
+void draw(SDL_Surface *s, Circle, Boo::Rectangle, MODE, bool,  SDL_Texture *gTexture, SDL_Renderer *gRenderer, SDL_Surface *loadedSurface, bool *isFilled);
 void circle(SDL_Surface * s, int xc, int yc, int r, int color) ;
 

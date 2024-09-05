@@ -75,6 +75,9 @@ int main(int argc, char *argv[])
       bool fill = false;
       int mouseX, mouseY;
 
+      bool isFilled {false};
+      int fCount = 0;
+
       while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
           if (SDL_QUIT == e.type) {
@@ -144,8 +147,14 @@ int main(int argc, char *argv[])
               break;
             case SDL_SCANCODE_F:
               printf("SDL_SCANCODE_F have been presssed\n");
-              if(fill == false) fill = true;
-              else fill = false;
+              fCount++;
+              if(fCount%2 == 0) isFilled = false;
+              if(fill == false){
+                  fill = true;
+                  }
+              else {
+                fill = false;
+                }
               break;
             case SDL_SCANCODE_ESCAPE:
               quit = true;
@@ -192,11 +201,11 @@ int main(int argc, char *argv[])
 
         SDL_FillRect(loadedSurface, NULL, RGB32(0, 0, 0));
 
-        draw(loadedSurface, circle, window, mode, fill);
+        draw(loadedSurface, circle, window, mode, fill, gTexture, gRenderer, loadedSurface, &isFilled);
 
-        SDL_UpdateTexture(gTexture, NULL, loadedSurface->pixels, loadedSurface->pitch);
-        SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
-        SDL_RenderPresent(gRenderer);
+        // SDL_UpdateTexture(gTexture, NULL, loadedSurface->pixels, loadedSurface->pitch);
+        // SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
+        // SDL_RenderPresent(gRenderer);
       }
     }
   }

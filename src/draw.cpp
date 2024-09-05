@@ -149,7 +149,7 @@ void line (SDL_Surface *s, int x1, int y1, int x2, int y2, int color)
 }
 
 
-void draw(SDL_Surface *s, Circle circle, Boo::Rectangle window, MODE mode, bool fill)
+void draw(SDL_Surface *s, Circle circle, Boo::Rectangle window, MODE mode, bool fill, SDL_Texture *gTexture, SDL_Renderer *gRenderer, SDL_Surface *loadedSurface, bool *isFilled)
 {
   // line(s, X_MIN, Y_MIN, X_MAX, Y_MIN, RGB32(10, 150, 200));
   // line(s, X_MAX, Y_MIN, X_MAX, Y_MAX, RGB32(10, 150, 200));
@@ -161,10 +161,19 @@ void draw(SDL_Surface *s, Circle circle, Boo::Rectangle window, MODE mode, bool 
 
   circle.transform();
   circle.draw(s, mode);
-  if(fill)
-    circle.seedFill(s, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, RGB32(250, 0, 0));
 
+  if(fill){
+      if(*isFilled) {
+        circle.seedFill(s, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, RGB32(250, 0, 0), gTexture, gRenderer, loadedSurface, true);
+      }else{
+        circle.seedFill(s, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, RGB32(250, 0, 0), gTexture, gRenderer, loadedSurface, false);
+        (*isFilled) = true;
+      }
+  }
 
+  SDL_UpdateTexture(gTexture, NULL, loadedSurface->pixels, loadedSurface->pitch);
+  SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
+  SDL_RenderPresent(gRenderer);
 
   // или использу¤ макрос можно получить код цвета:
   //   RGB32(0, 255, 0) эквивалентно записи 0x0000FF00
